@@ -20,22 +20,29 @@ def get_forced_resolution(dicom,spatial = 0.148):
     return pixels
 
 class DICOM(object):
-    def __init__(self):
+    def __init__(self,mode='dicom'):
         self.files = None
         self.path = None
         self.ds = None
+        self.mode = mode
         
     def get_name(self,idx=None):
         if idx is None:
             if type(self.files) is str:
                 S = self.files.split('/')
-                return S[-1]
+                if self.mode == 'dicom':
+                    return S[-1]
+                else:
+                    return S[-1][:-3]
             else:
                 print('No file index!!')
         else:
             if type(self.files) is list:
                 S = self.files[idx].split('/')
-                return S[-1]
+                if self.mode == 'dicom':
+                    return S[-1]
+                else:
+                    return S[-1][:-4]
             else:
                 print("Files are not in a list, don't use indexing!!")
                 
@@ -48,31 +55,62 @@ class DICOM(object):
     def read_file(self,idx=None):
         if idx is None:
             if type(self.files) is str:
-                #fullfile = os.path.join(self.path,self.files)
-                self.ds = pydicom.read_file(self.files)
+                if self.mode == 'dicom':
+                    self.ds = pydicom.read_file(self.files)
+                else:
+                    self.ds = cv2.imread(self.files,cv2.IMREAD_GRAYSCALE)
             else:
                 print("No file index!!")
         else:
             if type(self.files) is list:
-                #fullfile = os.path.join(self.path,self.files[idx])
-                self.ds = pydicom.read_file(self.files[idx])
+                if self.mode == 'dicom':
+                    self.ds = pydicom.read_file(self.files[idx])
+                else:
+                    self.ds = cv2.imread(self.files[idx],cv2.IMREAD_GRAYSCALE)
             else:
                 print("Files are not in a list, don't use indexing!!")        
         
     def pixels(self,side='R'):
-        n_bits = self.ds.BitsAllocated
-        monochrome = self.ds.PhotometricInterpretation
-        pixels = get_forced_resolution(self.ds,0.148)
-        size = pixels.shape
-        if side == 'R':
-            im = pixels[:,:size[1]//2]
-        elif side == 'L':
-            im = pixels[:,size[1]//2:]
-            im = deepcopy(np.flip(im,1))
-        if monochrome == 'MONOCHROME2':
+        if self.mode == 'dicom':
+            n_bits = self.ds.BitsAllocated
+            monochrome = self.ds.PhotometricInterpretation
+            pixels = get_forced_resolution(self.ds,0.148)
+            size = pixels.shape
+            if side == 'R':
+                im = pixels[:,:size[1]//2]
+            elif side == 'L':
+                im = pixels[:,size[1]//2:]
+                im = deepcopy(np.flip(im,1))
+            if monochrome == 'MONOCHROME2':
+                return im
+            elif monochrome == 'MONOCHROME1':
+                return 2**(n_bits-1) - im
+        else:
+            size = self.ds.shape
+            if side == 'R':
+                im = self.ds[:,:size[1]//2]
+            elif side == 'L':
+                im = self.ds[:,size[1]//2:]
+                im = deepcopy(np.flip(im,1))
             return im
-        elif monochrome == 'MONOCHROME1':
-            return 2**(n_bits-1) - im
+        
+    def update_mode(self,mode=None):
+        pics = ['.png','.jpg','.tif']
+        if mode == None:
+            if self.files == None:
+                raise ValueError('Read image files first!!')
+            if type(self.files) is list:
+                cur_ = self.files[0][-4:]
+                if cur_ in pics:
+                    self.mode = 'image'
+                else:
+                    self.mode = 'dicom'
+            elif type(self.files) == str:
+                cur_ = self.files[-4:]
+                if cur_ in pics:
+                    self.mode = 'image'
+                else:
+                    self.mode = 'dicom'
                 
                 
 def contours_to_csv(actors,names,filename):

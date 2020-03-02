@@ -266,8 +266,6 @@ def grad_1d(data,r=1):
 def graythresh(im):
     mu = im.mean()
     
-    bw = (im>mu)*1.0
-    
     while True:
         bw1 = im>=mu
         bw2 = im<mu

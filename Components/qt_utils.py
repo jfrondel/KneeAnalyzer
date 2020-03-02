@@ -366,7 +366,10 @@ class main_window(QMainWindow):
         files,path = QFileDialog.getOpenFileNames(self, 'Open Files(s)', '',
                                                   'All files(*)', options=options)
         if files:
+            files.sort()
+            self.cur_idx = 0; self.cur_side='R'
             self.dicom.files,self.dicom.path = files,path
+            self.dicom.update_mode()
             self.dicom.read_file(self.cur_idx)
             self.xray.clear_actors()
             self.xray.render_image(self.dicom.pixels(self.cur_side))

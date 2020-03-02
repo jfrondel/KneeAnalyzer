@@ -266,7 +266,7 @@ def joint_measure_from_edges(image,joint,landmarks=[2,7]):
     return latTib+P,medTib+P,latFem+P,medFem+P,Dlat,Dmed,pointslat+P,pointsmed+P
 
 class kneeModels(object):
-    def __init__(self,datapath='./annotations',modelpath='./models',train=False,split=None,grade_file=None,train_size=0.25):
+    def __init__(self,datapath='./annotations',modelpath='./models',train=False,split=None,grade_file=None,train_size=0.50):
         #Path to model components
         self.modelpath = modelpath
         #Active shape models
@@ -302,8 +302,8 @@ class kneeModels(object):
         
         new_idx,scale = refine_joint_location(image,idx)        
         
-        self.fullASM.update_scale(scale);self.tibiaASM.update_scale(scale);
-        self.femurASM.update_scale(scale);self.jointASM.update_scale(scale);
+        #self.fullASM.update_scale(scale);self.tibiaASM.update_scale(scale);
+        #self.femurASM.update_scale(scale);self.jointASM.update_scale(scale);
                 
         #Apply full joint ASM
         #points,start = self.update_position('center',new_idx,None,self.fullASM,image,n_contours=2,
@@ -404,7 +404,7 @@ class kneeModels(object):
             femur.append(fem);joint.append(np.concatenate((tib[10:30],fem[10:30]),0))
         return full,tibia,femur,joint
     
-    def train_models(self,path,split,grade_file,train_size=0.25):
+    def train_models(self,path,split,grade_file,train_size=0.50):
         #Set rng seed for reproducibility
         np.random.seed(42)
         if split == None and grade_file == None:
@@ -524,6 +524,8 @@ class kneeModels(object):
 
 def set_rois(points,w=95,h=41,dist=1,resolution = 0.148):
     "sb = 95*41, tr = 95*95"
+    if len(points.shape)<2:
+        points = points.reshape(1,-1)
     y = 0; x = 0;
     for p in points:
         if p[1] > y:
@@ -541,7 +543,7 @@ class kneeAnalyzer(object):
     def __init__(self,annotations='./annotations',models='./models',results='./results',js_from='joint',
                  shapes=['initial','full','tibia','femur','joint'],
                  orientations = [[None],['+dx','+dy','+dy','-dx'],['+dx','-dy','-dy','-dx'],['+dy','-dy']],
-                 R=[50,20,20,30],n_iters=200,resolution=0.148,crop=120):
+                 R=[60,10,10,20],n_iters=200,resolution=0.148,crop=120):
         self.annotations = annotations
         self.models = models
         self.results= results
@@ -555,8 +557,8 @@ class kneeAnalyzer(object):
         self.model = None
         return
         
-    def train_models(self,grades,train_size=0.5):
-        self.model = kneeModels(datapath=self.annotations,modelpath=self.models,train=True,grade_file=grades,train_size=train_size)
+    def train_models(self,grades,train_size=0.50):
+        self.model = kneeModels(datapath=self.annotations,modelpath=self.models,train=True,grade_file=grades)
         return
     
     def load_models(self):
@@ -592,8 +594,8 @@ class kneeAnalyzer(object):
         
         #Place ROI
         points = segmentation[-1]; N = points.shape[0]
-        sbRight,tRight = set_rois(points[4:7,:],w=95,h=41);
-        sbLeft,tLeft = set_rois(points[N//2-7:N//2-4,:],w=95,h=41)
+        sbLeft,tLeft = set_rois(points[5,:],w=95,h=41);
+        sbRight,tRight = set_rois(points[N//2-5,:],w=95,h=41)
         rois = [sbRight,sbLeft,tRight,tLeft]
         return segmentation,measurements,lateral,medial,rois, edgeMeasurements
     
@@ -704,7 +706,7 @@ class kneeAnalyzer(object):
                  'femur_lateral':latFemur.ravel(),'femur_medial':medFemur.ravel()}
         
         df = pd.DataFrame.from_dict({key:pd.Series(value) for key,value in dict_.items()})
-        df.to_csv(savepath,sep='\t',encoding='utf-8')
+        df.to_csv(savepath,sep='\t',encoding='utf-8',index=False)
         
         if string != None:
             savename = name+'_'+'points'+'_'+string+'.csv'
@@ -714,7 +716,7 @@ class kneeAnalyzer(object):
         dict_ = {'x_lateral':p_lateral[:,0],'y_lateral':p_lateral[:,1],
                  'x_medial':p_medial[:,0],'y_medial':p_medial[:,1]}
         df = pd.DataFrame.from_dict({key:pd.Series(value) for key,value in dict_.items()})
-        df.to_csv(savepath,sep='\t',encoding='utf-8')
+        df.to_csv(savepath,sep='\t',encoding='utf-8',index=False)
     
     def save_rois(self,name,rois,string=None):
         #Make directorues for save data

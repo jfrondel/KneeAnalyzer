@@ -16,7 +16,7 @@ class knee_contours(object):
         self.femurMedCon = None
         
         self.vtkWidget = vtkWidget
-        self.colors = [[0.0,1.0,0.0],[1.0,1.0,0.0],[0.0,0.0,1.0],[1.0,0.0,1.0]]
+        self.colors = [[0.0,1.0,0.0],[0.5,0.8,0.0],[0.0,0.0,1.0],[0.5,0.0,0.8]]
         self.lw = lineWidth
         
     def render_contours(self,choice='all'):
@@ -133,7 +133,7 @@ class knee_contours(object):
             return self.femurMedCon, choice
         
 class landmark_points(object):
-    def __init__(self,vtkWidget,colors=[[0.75,0.0,0.0],[0.0,0.75,0.0],[0.0,0.0,0.75],[0.75,0.75,0.0]],size=8):
+    def __init__(self,vtkWidget,colors=[[0.75,0.0,0.0],[0.0,0.75,0.0],[0.0,0.0,0.75],[0.0,0.75,0.75]],size=8):
         self.full = None; self.tibia = None; 
         self.femur = None; self.joint = None;
         self.vtkWidget = vtkWidget
